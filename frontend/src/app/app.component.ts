@@ -1,0 +1,33 @@
+import {Component,OnInit} from '@angular/core';
+import {CommonModule,CurrencyPipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {HttpClient} from '@angular/common/http';
+interface Product {id:number;name:string;brand:string;processor:string;ramGb:number;storageGb:number;gpu:string;displayText:string;price:number;stock:number;}
+@Component({selector:'app-root',standalone:true,imports:[CommonModule,FormsModule,CurrencyPipe],template:`
+<div class="shell"><aside class="sidebar"><div class="logo">BL</div><h2>BEYOND<br>LAPTOP</h2><small>TECH STORE & SERVICES</small>
+<nav><button *ngFor="let p of pages" [class.active]="page===p.id" (click)="page=p.id">{{p.label}}</button></nav><p class="note">● Demo environment<br><small>Angular · Spring Boot · MySQL</small></p></aside>
+<main><header><div><small>BEYOND LAPTOP / {{page | uppercase}}</small><h1>{{titles[page]}}</h1></div><button class="cart" (click)="showCart=!showCart">Cart ({{cart.length}})</button></header>
+<section *ngIf="page==='store'"><div class="hero"><div><small>PERFORMANCE MEETS POSSIBILITY</small><h2>Find the laptop<br>that moves you forward.</h2><p>Explore powerful laptops, compare specifications and build your ideal setup.</p><button class="primary" (click)="scroll()">Explore laptops ↗</button></div><div class="device">BEYOND<br><b>LAPTOP</b></div></div>
+<div class="section" id="products"><div><small>CURATED FOR YOU</small><h2>Featured laptops</h2></div><input [(ngModel)]="search" placeholder="Search laptop or brand..."></div>
+<div class="products"><article *ngFor="let p of filtered"><div class="visual">{{p.brand}}<div class="laptop"></div></div><div class="info"><h3>{{p.name}}</h3><p>{{p.processor}} · {{p.ramGb}}GB RAM · {{p.storageGb}}GB SSD</p><p>{{p.gpu}} · {{p.displayText}}</p><strong>{{p.price | currency:'USD'}}</strong><button (click)="add(p)">Add to cart +</button></div></article></div></section>
+<section *ngIf="page==='compare'"><small>MAKE A SMARTER CHOICE</small><h2>Laptop comparison</h2><div class="compare"><article *ngFor="let p of products"><h3>{{p.name}}</h3><b>{{p.price|currency:'USD'}}</b><p>Processor: {{p.processor}}</p><p>Graphics: {{p.gpu}}</p><p>Memory: {{p.ramGb}} GB</p><p>Storage: {{p.storageGb}} GB SSD</p><p>Display: {{p.displayText}}</p></article></div></section>
+<section *ngIf="page==='builder'"><small>YOUR DEVICE, YOUR WAY</small><h2>Laptop setup builder</h2><div class="builder"><div><label>Base laptop</label><select [(ngModel)]="builderId"><option *ngFor="let p of products" [ngValue]="p.id">{{p.name}}</option></select><label>Memory</label><select [(ngModel)]="ram"><option [ngValue]="16">16 GB — Included</option><option [ngValue]="32">32 GB — +$90</option><option [ngValue]="64">64 GB — +$180</option></select><label>SSD</label><select [(ngModel)]="ssd"><option [ngValue]="512">512 GB — Included</option><option [ngValue]="1000">1 TB — +$75</option><option [ngValue]="2000">2 TB — +$160</option></select><p><input type="checkbox" [(ngModel)]="mouse"> Wireless mouse +$25</p><p><input type="checkbox" [(ngModel)]="bag"> Laptop backpack +$39</p></div><aside class="summary"><small>CONFIGURATION SUMMARY</small><h3>{{selected?.name}}</h3><p>{{ram}} GB RAM · {{ssd}} GB SSD</p><h2>{{total|currency:'USD'}}</h2><button class="primary" (click)="addBuild()">Add configuration to cart</button></aside></div></section>
+<section *ngIf="page==='admin'"><small>CONTROL CENTER</small><h2>Business overview</h2><div class="kpis"><article><small>PRODUCTS</small><h2>{{products.length}}</h2></article><article><small>INVENTORY UNITS</small><h2>{{stockTotal}}</h2></article><article><small>CART ITEMS</small><h2>{{cart.length}}</h2></article><article><small>LOW STOCK</small><h2>{{lowStock}}</h2></article></div><h3>Product inventory</h3><table><tr><th>PRODUCT</th><th>BRAND</th><th>PRICE</th><th>STOCK</th></tr><tr *ngFor="let p of products"><td>{{p.name}}</td><td>{{p.brand}}</td><td>{{p.price|currency:'USD'}}</td><td>{{p.stock}}</td></tr></table></section>
+<div class="cart-panel" *ngIf="showCart"><button (click)="showCart=false">Close ×</button><h2>Your cart</h2><p *ngFor="let p of cart">{{p.name}} — {{p.price|currency:'USD'}}</p><hr><b>Subtotal: {{cartTotal|currency:'USD'}}</b><p><small>Demo only — no payment is processed.</small></p></div>
+<footer>BEYOND LAPTOP <span>Project demonstration prototype · 2026</span></footer></main></div>`})
+export class AppComponent implements OnInit {
+ pages=[{id:'store',label:'⌂  Storefront'},{id:'compare',label:'⇄  Compare'},{id:'builder',label:'⚙  Setup Builder'},{id:'admin',label:'▦  Admin Dashboard'}];
+ titles:any={store:'Discover your next laptop',compare:'Compare before you choose',builder:'Build your ideal setup',admin:'Admin management dashboard'};
+ page='store';products:Product[]=[];cart:Product[]=[];search='';showCart=false;builderId=1;ram=16;ssd=512;mouse=false;bag=false;
+ constructor(private http:HttpClient){}
+ ngOnInit(){this.http.get<Product[]>('http://localhost:8080/api/products').subscribe({next:p=>{this.products=p;this.builderId=p[0]?.id??1;},error:()=>this.products=[
+ {id:1,name:'ROG Zephyrus G14',brand:'ASUS',processor:'AMD Ryzen 9',ramGb:16,storageGb:1000,gpu:'GeForce RTX 4060',displayText:'14-inch QHD 165Hz',price:1499,stock:8},
+ {id:2,name:'MacBook Air 15',brand:'Apple',processor:'Apple M-series',ramGb:16,storageGb:512,gpu:'Integrated GPU',displayText:'15-inch Liquid Retina',price:1299,stock:12},
+ {id:3,name:'Legion 5 Pro',brand:'Lenovo',processor:'Intel Core i7',ramGb:16,storageGb:1000,gpu:'GeForce RTX 4070',displayText:'16-inch WQXGA 165Hz',price:1599,stock:5}]});}
+ get filtered(){return this.products.filter(p=>(p.name+' '+p.brand).toLowerCase().includes(this.search.toLowerCase()));}
+ get selected(){return this.products.find(p=>p.id===Number(this.builderId));}
+ get total(){return (this.selected?.price||0)+(this.ram===32?90:this.ram===64?180:0)+(this.ssd===1000?75:this.ssd===2000?160:0)+(this.mouse?25:0)+(this.bag?39:0);}
+ get cartTotal(){return this.cart.reduce((s,p)=>s+p.price,0);}get stockTotal(){return this.products.reduce((s,p)=>s+p.stock,0);}get lowStock(){return this.products.filter(p=>p.stock<=5).length;}
+ add(p:Product){this.cart=[...this.cart,p];}addBuild(){if(this.selected)this.cart=[...this.cart,{...this.selected,name:this.selected.name+' (Custom setup)',price:this.total}];}
+ scroll(){document.getElementById('products')?.scrollIntoView({behavior:'smooth'});}
+}
